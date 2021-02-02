@@ -260,15 +260,6 @@ const parseEdn = (text, tagTransformers = {}) => {
   return tree;
 };
 
-// let longstring = "";
-// while (longstring.length < 500000) {
-//   longstring += textLeftString;
-// }
-// console.log(longstring);
-// const stime = performance.now();
-// parseEdn(longstring);
-// console.log(`took ${performance.now() - stime}`);
-
 const testParseEdnQuick = () => {
   const parsed = parseEdn(
     `hello :hello/hello [:vector 1 1.3542e21] {:hi "ho"} #{1 2 3} #inst "1985-04-12T23:20:50.52Z" 1.2345 (4523198 "hebkse" 8.932432)`
@@ -290,16 +281,13 @@ const testParseEdnQuick = () => {
 
 const testParseEdnPerformanceShortStrings = () => {
   const stime = performance.now();
-  for (let i = 0; i < 100000; i++) {
+  for (let i = 0; i < 10000; i++) {
     parseEdn(
       `hello :hello/hello [:vector 1 1.3542e21] {:hi "ho"} #{1 2 3} #inst "1985-04-12T23:20:50.52Z" 1.2345 (4523198 "hebkse" 8.932432)`
     );
   }
   const took = performance.now() - stime;
-  console.log(`Parsed 100,000 strings of 100 chars in ${took}`);
-  if (took > 1000) {
-    console.log(`parse-edn took longer than expected: ${took}`);
-  }
+  console.log(`Parsed 10,000 strings of 100 chars in ${took}`);
 };
 
 // const testParseEdnPerformanceLongString = () => {
