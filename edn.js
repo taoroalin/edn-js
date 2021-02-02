@@ -268,18 +268,47 @@ const parseEdn = (text, tagTransformers = {}) => {
 // const stime = performance.now();
 // parseEdn(longstring);
 // console.log(`took ${performance.now() - stime}`);
-const stime = performance.now();
-for (let i = 0; i < 71000; i++) {
-  parseEdn(`hello :hello/hello [:vector 1 1.3542e21] {:hi "ho"} #{1 2 3} hedc 1.2345 (4523198 "hebkse" 8.932432)`);
-}
-console.log(`lots took ${performance.now() - stime}`);
-console.log(parseEdn(`hello "hello" #tester {"k" "v"}`, { tester: () => "replaced" }));
 
-fetch("json/graphminer.txt").then((data) => {
-  data.text().then((text) => {
-    console.log(text);
-    const stime2 = performance.now();
-    console.log(parseEdn(text));
-    console.log(`took ${performance.now() - stime2}`);
-  });
-});
+const testParseEdnQuick = () => {
+  const parsed = parseEdn(
+    `hello :hello/hello [:vector 1 1.3542e21] {:hi "ho"} #{1 2 3} #inst "1985-04-12T23:20:50.52Z" 1.2345 (4523198 "hebkse" 8.932432)`
+  );
+  const reference = [
+    "hello",
+    "hello/hello",
+    ["vector", 1, 1.3542e21],
+    { $ednType$: "map", hi: "ho" },
+    { $ednType$: "set" },
+    482196050520,
+    1.2345,
+    [4523198, "hebkse", 8.932432],
+  ];
+  if (parsed != reference) {
+    throw new Error(`parse-edn failed test. produced ${parsed} instead of ${reference}`);
+  }
+};
+
+const testParseEdnPerformanceShortStrings = () => {
+  const stime = performance.now();
+  for (let i = 0; i < 100000; i++) {
+    parseEdn(
+      `hello :hello/hello [:vector 1 1.3542e21] {:hi "ho"} #{1 2 3} #inst "1985-04-12T23:20:50.52Z" 1.2345 (4523198 "hebkse" 8.932432)`
+    );
+  }
+  const took = performance.now() - stime;
+  console.log(`Parsed 100,000 strings of 100 chars in ${took}`);
+  if (took > 1000) {
+    console.log(`parse-edn took longer than expected: ${took}`);
+  }
+};
+
+// const testParseEdnPerformanceLongString = () => {
+// fetch("json/graphminer.txt").then((data) => {
+//   data.text().then((text) => {
+//     console.log(text);
+//     const stime2 = performance.now();
+//     console.log(parseEdn(text));
+//     console.log(`parsed one 7.1M string in ${performance.now() - stime2}`);
+//   });
+// });
+// };
