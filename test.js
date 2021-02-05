@@ -49,7 +49,7 @@ const testParseEdnPerformanceLongString = () => {
 };
 
 const testStringify = () => {
-  const reference = `["hi",[1,2,3],{"zee" "zow"},#{"hi",1},1.2]`
+  const reference = `["hi",[1,2,3],{"zee" "zow","seesaw" {"1" 2}},#{"hi",1},1.2]`
   const stringified = stringifyEdn(["hi", [1, 2, 3], { zee: "zow", seesaw: { 1: 2 } }, new Set(["hi", 1]), 1.2])
   console.log(stringified)
 }
