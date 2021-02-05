@@ -35,7 +35,7 @@ const regexChar = /^\\([a-zA-Z0-9]+)[ \t\r\n,]*/;
 
 const parseEdn = (text, tagTransformers = {}) => {
   tagTransformers = {
-    inst: Date.parse,
+    inst: (string) => new Date(Date.parse(string)),
     ...tagTransformers,
   };
   let textLeft = text;
@@ -106,7 +106,9 @@ const parseEdn = (text, tagTransformers = {}) => {
       newSet.$ednType$ = "set";
       pushTree(newSet);
       stack.push(newSet);
-      textLeft = textLeft.substring(textLeft.match(/^#\{[ \t\r\n,]*/)[0].length);
+      textLeft = textLeft.substring(
+        textLeft.match(/^#\{[ \t\r\n,]*/)[0].length
+      );
       continue;
     }
     if (textLeft[0] === "(") {
@@ -157,10 +159,14 @@ const parseEdn = (text, tagTransformers = {}) => {
     if (textLeft[0] === "}") {
       if (stack[stack.length - 1].$ednType$ === "set") {
         popStack();
-        textLeft = textLeft.substring(textLeft.match(/^\}[ \t\r\n,]*/)[0].length);
+        textLeft = textLeft.substring(
+          textLeft.match(/^\}[ \t\r\n,]*/)[0].length
+        );
       } else if (stack[stack.length - 1].$ednType$ === "map") {
         popStack();
-        textLeft = textLeft.substring(textLeft.match(/^\}[ \t\r\n,]*/)[0].length);
+        textLeft = textLeft.substring(
+          textLeft.match(/^\}[ \t\r\n,]*/)[0].length
+        );
       } else {
         console.log(tree);
         throw new Error(`unmatched curly brace ${textLeft}`);
@@ -260,43 +266,50 @@ const parseEdn = (text, tagTransformers = {}) => {
   return tree;
 };
 
-const testParseEdnQuick = () => {
-  const parsed = parseEdn(
-    `hello :hello/hello [:vector 1 1.3542e21] {:hi "ho"} #{1 2 3} #inst "1985-04-12T23:20:50.52Z" 1.2345 (4523198 "hebkse" 8.932432)`
-  );
-  const reference = [
-    "hello",
-    "hello/hello",
-    ["vector", 1, 1.3542e21],
-    { $ednType$: "map", hi: "ho" },
-    { $ednType$: "set" },
-    482196050520,
-    1.2345,
-    [4523198, "hebkse", 8.932432],
-  ];
-  if (parsed != reference) {
-    throw new Error(`parse-edn failed test. produced ${parsed} instead of ${reference}`);
-  }
+const stringifyEdn = (obj) => {
+  const seenSet = new Set();
+  let result = "";
+  const stringify = (obj) => {
+    if (typeof obj === "number") {
+      result += obj;
+      return;
+    } else if (typeof obj === "string") {
+      result += '"' + obj + '"'
+      return;
+    }
+    if (seenSet.has(obj))
+      throw new Error(`stringifyEdn can't handle recursive data structures`);
+    seenSet.add(obj);
+    if (obj instanceof Set) {
+      let arr = Array.from(obj);
+      result += "#{";
+      for (let i = 0; i < arr.length - 1; i++) {
+        stringify(arr[i]);
+        result += ",";
+      }
+      stringify(arr[arr.length - 1]);
+      result += "}";
+    } else if (obj instanceof Array) {
+      result += "[";
+      for (let i = 0; i < obj.length - 1; i++) {
+        stringify(obj[i]);
+        result += ",";
+      }
+      stringify(obj[obj.length - 1])
+      result += "]";
+    } else {
+      result += "{";
+      const arr = Object.entries(obj);
+      for (let i = 0; i < arr.length - 1; i++) {
+        result += '"' + arr[i][0] + '" ';
+        stringify(arr[i][1]);
+        result += ','
+      }
+      result += '"' + arr[arr.length - 1][0] + '" ';
+      stringify(arr[arr.length - 1][1])
+      result += "}";
+    }
+  };
+  stringify(obj);
+  return result;
 };
-
-const testParseEdnPerformanceShortStrings = () => {
-  const stime = performance.now();
-  for (let i = 0; i < 10000; i++) {
-    parseEdn(
-      `hello :hello/hello [:vector 1 1.3542e21] {:hi "ho"} #{1 2 3} #inst "1985-04-12T23:20:50.52Z" 1.2345 (4523198 "hebkse" 8.932432)`
-    );
-  }
-  const took = performance.now() - stime;
-  console.log(`Parsed 10,000 strings of 100 chars in ${took}`);
-};
-
-// const testParseEdnPerformanceLongString = () => {
-// fetch("json/graphminer.txt").then((data) => {
-//   data.text().then((text) => {
-//     console.log(text);
-//     const stime2 = performance.now();
-//     console.log(parseEdn(text));
-//     console.log(`parsed one 7.1M string in ${performance.now() - stime2}`);
-//   });
-// });
-// };
